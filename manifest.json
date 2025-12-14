@@ -1,0 +1,45 @@
+{
+  "manifest_version": 3,
+  "name": "Mouse Gestures",
+  "version": "1.0.0",
+  "description": "Control your browser with mouse gestures.",
+
+  "permissions": [
+    "storage",
+    "tabs",
+    "downloads"
+  ],
+
+  "host_permissions": [
+    "<all_urls>"
+  ],
+
+  "background": {
+    "service_worker": "scripts/sw.js"
+  },
+
+  "action": {
+    "default_title": "Mouse Gestures"
+  },
+
+  "options_ui": {
+    "page": "options.html",
+    "open_in_tab": true
+  },
+
+  "content_scripts": [
+    {
+      "matches": ["<all_urls>"],
+      "js": ["scripts/content.js"],
+      "css": ["styles/content.css"],
+      "run_at": "document_start"
+    }
+  ],
+
+  "icons": {
+    "16": "icons/icon16.png",
+    "32": "icons/icon32.png",
+    "48": "icons/icon48.png",
+    "128": "icons/icon128.png"
+  }
+}

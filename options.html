@@ -1,0 +1,157 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Mouse Gestures — Options</title>
+
+  <!-- If you already have options.css, keep it -->
+  <link rel="stylesheet" href="styles/options.css">
+</head>
+
+<body>
+  <div class="wrap">
+    <header class="topbar card">
+      <div>
+        <div class="title">Mouse Gestures — Options</div>
+        <div class="muted small">Quick controls, tuning, trainer, mappings, and backup.</div>
+      </div>
+
+      <div class="row" style="gap:10px; align-items:center;">
+        <span class="muted small">Theme</span>
+        <select id="themeSelect" class="select">
+          <option value="dark">Dark</option>
+          <option value="dim">Dim</option>
+          <option value="light">Light</option>
+        </select>
+        <div id="saved" class="muted small"></div>
+      </div>
+    </header>
+
+    <!-- QUICK CONTROLS (was your popup) -->
+    <section class="card">
+      <h2 style="margin:0 0 8px 0;">Quick controls</h2>
+      <div class="muted small" id="qcHint">Applies to your current active tab.</div>
+
+      <div class="row" style="justify-content:space-between; align-items:center; margin-top:10px;">
+        <div class="muted small">Domain:</div>
+        <div id="domainLabel" class="pill">—</div>
+      </div>
+
+      <div class="row" style="justify-content:space-between; align-items:center;">
+        <label class="label"><input id="globalEnabled" type="checkbox"> Enable gestures</label>
+      </div>
+
+      <div class="row" style="justify-content:space-between; align-items:center;">
+        <label class="label"><input id="tempDisable" type="checkbox"> Temp disable (this tab)</label>
+      </div>
+
+      <div class="row" style="justify-content:space-between; align-items:center;">
+        <label class="label"><input id="siteDisable" type="checkbox"> Disable on this site</label>
+      </div>
+
+      <div class="muted small" id="statusText" style="margin-top:6px;"></div>
+    </section>
+
+    <!-- BACKUP -->
+    <section class="card">
+      <h2 style="margin:0 0 8px 0;">Backup</h2>
+      <div class="muted small">Export your settings to JSON, or import them later.</div>
+
+      <div class="row" style="margin-top:10px; gap:10px;">
+        <button class="btn" id="exportBtn" type="button">Export JSON</button>
+        <button class="btn" id="importBtn" type="button">Import JSON</button>
+        <input id="importFile" type="file" accept="application/json,.json" style="display:none;">
+      </div>
+    </section>
+
+    <!-- ENABLE (full options toggle) -->
+    <section class="card">
+      <label class="label"><input id="enabled" type="checkbox"> Enable gestures (global)</label>
+      <div class="muted small">This is the master on/off switch.</div>
+    </section>
+
+    <!-- SITE MODE -->
+    <section class="card">
+      <h2 style="margin:0 0 8px 0;">Site mode</h2>
+
+      <div class="row" style="gap:16px; flex-wrap:wrap;">
+        <label class="label"><input id="modeBlacklist" type="radio" name="mode"> Blacklist</label>
+        <label class="label"><input id="modeWhitelist" type="radio" name="mode"> Whitelist</label>
+      </div>
+
+      <div class="muted small" style="margin-top:6px;">One domain per line.</div>
+      <textarea id="blacklist" class="textarea" rows="6" placeholder="example.com"></textarea>
+
+      <div class="row" style="margin-top:10px;">
+        <button class="btn" id="saveBlacklist" type="button">Save list</button>
+      </div>
+    </section>
+
+    <!-- TRAIL TUNING -->
+    <section class="card">
+      <h2 style="margin:0 0 8px 0;">Trail tuning</h2>
+
+      <div class="grid2">
+        <label class="label">Min segment
+          <input id="minSegmentPx" type="range" min="6" max="60" step="1">
+        </label>
+
+        <label class="label">Jitter
+          <input id="jitterPx" type="range" min="0" max="20" step="1">
+        </label>
+
+        <label class="label">Line width
+          <input id="lineWidth" type="range" min="1" max="12" step="1">
+        </label>
+
+        <label class="label">Trail color
+          <input id="trailColor" type="color">
+        </label>
+
+        <label class="label">Trail alpha
+          <input id="trailAlpha" type="range" min="0.05" max="1" step="0.01">
+        </label>
+      </div>
+
+      <div class="row" style="margin-top:10px; gap:10px;">
+        <button class="btn" id="savePrefs" type="button">Save tuning</button>
+        <button class="btn ghost" id="resetPrefs" type="button">Reset</button>
+      </div>
+    </section>
+
+    <!-- TRAINER -->
+    <section class="card">
+      <h2 style="margin:0 0 8px 0;">Trainer</h2>
+      <div class="muted small">Draw inside the box (left or right mouse). Detected pattern and action will show below.</div>
+
+      <div class="trainer">
+        <canvas id="trainerCanvas"></canvas>
+      </div>
+
+      <div class="row" style="margin-top:10px; justify-content:space-between; align-items:center;">
+        <button class="btn ghost" id="trainerClear" type="button">Clear</button>
+
+        <div class="muted small" style="text-align:right;">
+          <div><span class="muted">Detected:</span> <span id="trainerPattern">—</span></div>
+          <div><span class="muted">Action:</span> <span id="trainerAction">—</span></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- GESTURE MAP -->
+    <section class="card">
+      <h2 style="margin:0 0 8px 0;">Gesture map</h2>
+      <div class="muted small">Map patterns to actions. “(disabled)” means do nothing.</div>
+
+      <div id="mapGrid" class="mapGrid"></div>
+
+      <div class="row" style="margin-top:10px;">
+        <button class="btn" id="saveMap" type="button">Save mappings</button>
+      </div>
+    </section>
+  </div>
+
+  <script src="scripts/options.js"></script>
+</body>
+</html>

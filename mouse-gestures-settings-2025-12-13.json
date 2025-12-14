@@ -1,0 +1,28 @@
+{
+  "meta": {
+    "app": "Mouse Gestures",
+    "schema": 1,
+    "exportedAt": "2025-12-13T03:58:00.994Z"
+  },
+  "mg": {
+    "enabled": true,
+    "mode": "blacklist",
+    "blacklist": [],
+    "gestureMap": {
+      "D": "bottom",
+      "DL": "new_tab",
+      "DR": "close_tab",
+      "L": "back",
+      "R": "forward",
+      "U": "top",
+      "UD": "reload"
+    },
+    "prefs": {
+      "minSegmentPx": 18,
+      "jitterPx": 4,
+      "lineWidth": 2,
+      "trailColor": "#00e5ff",
+      "trailAlpha": 0.9
+    }
+  }
+}

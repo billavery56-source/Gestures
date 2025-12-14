@@ -1,0 +1,219 @@
+/* styles/options.css */
+
+:root {
+  --bg: #0b0f14;
+  --card: rgba(255,255,255,0.06);
+  --card2: rgba(255,255,255,0.04);
+  --text: rgba(255,255,255,0.92);
+  --muted: rgba(255,255,255,0.65);
+  --border: rgba(255,255,255,0.12);
+  --accent: #00e5ff;
+
+  --input-bg: rgba(0,0,0,0.28);
+  --input-bg2: rgba(0,0,0,0.40);
+  --input-text: rgba(255,255,255,0.92);
+  --input-border: rgba(255,255,255,0.16);
+}
+
+:root[data-theme="dim"]{
+  --bg: #11161c;
+  --card: rgba(255,255,255,0.07);
+  --card2: rgba(255,255,255,0.05);
+  --text: rgba(255,255,255,0.92);
+  --muted: rgba(255,255,255,0.70);
+  --border: rgba(255,255,255,0.14);
+  --accent: #49f0ff;
+
+  --input-bg: rgba(0,0,0,0.22);
+  --input-bg2: rgba(0,0,0,0.32);
+  --input-text: rgba(255,255,255,0.92);
+  --input-border: rgba(255,255,255,0.18);
+}
+
+:root[data-theme="light"]{
+  --bg: #f6f7fb;
+  --card: rgba(0,0,0,0.05);
+  --card2: rgba(0,0,0,0.03);
+  --text: rgba(0,0,0,0.88);
+  --muted: rgba(0,0,0,0.60);
+  --border: rgba(0,0,0,0.14);
+  --accent: #0aa6b8;
+
+  --input-bg: rgba(255,255,255,0.9);
+  --input-bg2: rgba(255,255,255,1);
+  --input-text: rgba(0,0,0,0.88);
+  --input-border: rgba(0,0,0,0.18);
+}
+
+* { box-sizing: border-box; }
+
+body{
+  margin:0;
+  font: 14px system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+  background: radial-gradient(1000px 800px at 40% 10%, rgba(0,229,255,0.10), transparent 55%),
+              radial-gradient(900px 600px at 70% 40%, rgba(140,120,255,0.08), transparent 60%),
+              var(--bg);
+  color: var(--text);
+}
+
+.wrap{
+  max-width: 980px;
+  margin: 18px auto 40px;
+  padding: 0 14px;
+}
+
+.card{
+  background: linear-gradient(180deg, var(--card), var(--card2));
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 14px 14px;
+  margin: 12px 0;
+  box-shadow: 0 12px 30px rgba(0,0,0,0.25);
+}
+
+.topbar{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap: 14px;
+}
+
+.title{
+  font-size: 18px;
+  font-weight: 800;
+}
+
+.muted{ color: var(--muted); }
+.small{ font-size: 12px; }
+.row{
+  display:flex;
+  align-items:center;
+  gap: 10px;
+}
+
+.grid2{
+  display:grid;
+  grid-template-columns: repeat(2, minmax(220px, 1fr));
+  gap: 12px 14px;
+}
+
+@media (max-width: 720px){
+  .topbar{ flex-direction: column; align-items: flex-start; }
+  .grid2{ grid-template-columns: 1fr; }
+}
+
+.label{
+  display:flex;
+  align-items:center;
+  gap: 8px;
+  user-select:none;
+}
+
+.pill{
+  padding: 6px 10px;
+  border: 1px solid var(--border);
+  background: var(--input-bg);
+  border-radius: 999px;
+  font-size: 12px;
+}
+
+/* Buttons */
+.btn{
+  padding: 8px 12px;
+  border-radius: 10px;
+  border: 1px solid var(--input-border);
+  background: rgba(0,229,255,0.10);
+  color: var(--text);
+  cursor:pointer;
+  font-weight: 700;
+}
+.btn:hover{ border-color: rgba(0,229,255,0.35); }
+.btn:active{ transform: translateY(1px); }
+.btn.ghost{
+  background: transparent;
+}
+
+/* Inputs / Textarea */
+.textarea{
+  width:100%;
+  margin-top: 8px;
+  padding: 10px 12px;
+  border-radius: 12px;
+  border: 1px solid var(--input-border);
+  background: var(--input-bg);
+  color: var(--input-text);
+  outline: none;
+  resize: vertical;
+  min-height: 120px;
+}
+.textarea:focus{
+  border-color: rgba(0,229,255,0.35);
+  box-shadow: 0 0 0 3px rgba(0,229,255,0.10);
+}
+
+input[type="range"], input[type="color"]{
+  width: 100%;
+}
+
+/* ===== Dropdown fix (the main thing you asked for) ===== */
+select.select,
+select,
+.mapGrid select{
+  appearance: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+
+  padding: 8px 34px 8px 10px;
+  border-radius: 10px;
+  border: 1px solid var(--input-border);
+  background: var(--input-bg2);
+  color: var(--input-text);
+  outline: none;
+
+  /* subtle chevron */
+  background-image:
+    linear-gradient(45deg, transparent 50%, var(--muted) 50%),
+    linear-gradient(135deg, var(--muted) 50%, transparent 50%),
+    linear-gradient(to right, transparent, transparent);
+  background-position:
+    calc(100% - 18px) calc(50% - 3px),
+    calc(100% - 12px) calc(50% - 3px),
+    calc(100% - 2.4em) 0.45em;
+  background-size: 6px 6px, 6px 6px, 1px 1.8em;
+  background-repeat: no-repeat;
+}
+
+select:focus{
+  border-color: rgba(0,229,255,0.35);
+  box-shadow: 0 0 0 3px rgba(0,229,255,0.10);
+}
+
+/* Options inside the dropdown list (important for Dark/Dim) */
+select option{
+  background: var(--input-bg2);
+  color: var(--input-text);
+}
+
+/* Trainer */
+.trainer{
+  width: 100%;
+  height: 220px;
+  border-radius: 12px;
+  border: 1px solid var(--border);
+  overflow: hidden;
+  background: rgba(0,0,0,0.18);
+}
+#trainerCanvas{
+  width: 100%;
+  height: 100%;
+  display:block;
+}
+
+/* Gesture map grid */
+.mapGrid .row{
+  padding: 6px 0;
+  border-bottom: 1px solid rgba(255,255,255,0.06);
+}
+:root[data-theme="light"] .mapGrid .row{
+  border-bottom: 1px solid rgba(0,0,0,0.08);
+}

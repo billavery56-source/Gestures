@@ -1,0 +1,7 @@
+/* Canvas overlay for gesture trail */
+#mg-canvas {
+  position: fixed;
+  inset: 0;
+  z-index: 2147483647;
+  pointer-events: none;
+}
