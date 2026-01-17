@@ -4,149 +4,198 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>Mouse Gestures — Options</title>
-
-  <!-- If you already have options.css, keep it -->
-  <link rel="stylesheet" href="styles/options.css">
+  <link rel="stylesheet" href="styles/options.css" />
 </head>
-
 <body>
   <div class="wrap">
-    <header class="topbar card">
-      <div>
-        <div class="title">Mouse Gestures — Options</div>
-        <div class="muted small">Quick controls, tuning, trainer, mappings, and backup.</div>
+    <header class="topbar">
+      <div class="titleblock">
+        <div class="h1">Mouse Gestures — Options</div>
+        <div class="sub">Tune gestures, site mode, trail, smart exceptions, and backup.</div>
       </div>
 
-      <div class="row" style="gap:10px; align-items:center;">
-        <span class="muted small">Theme</span>
-        <select id="themeSelect" class="select">
-          <option value="dark">Dark</option>
-          <option value="dim">Dim</option>
-          <option value="light">Light</option>
-        </select>
-        <div id="saved" class="muted small"></div>
+      <div class="topright">
+        <div class="row compact">
+          <label class="label" for="themeSelect">Theme</label>
+          <select id="themeSelect">
+            <option value="dark">Dark</option>
+            <option value="dim">Dim</option>
+            <option value="light">Light</option>
+          </select>
+        </div>
+        <div id="saved" class="saved"></div>
       </div>
     </header>
 
-    <!-- QUICK CONTROLS (was your popup) -->
+    <!-- Backup -->
     <section class="card">
-      <h2 style="margin:0 0 8px 0;">Quick controls</h2>
-      <div class="muted small" id="qcHint">Applies to your current active tab.</div>
+      <h2>Backup</h2>
+      <div class="muted">Export your settings to a JSON file, or import them back later.</div>
 
-      <div class="row" style="justify-content:space-between; align-items:center; margin-top:10px;">
-        <div class="muted small">Domain:</div>
-        <div id="domainLabel" class="pill">—</div>
-      </div>
-
-      <div class="row" style="justify-content:space-between; align-items:center;">
-        <label class="label"><input id="globalEnabled" type="checkbox"> Enable gestures</label>
-      </div>
-
-      <div class="row" style="justify-content:space-between; align-items:center;">
-        <label class="label"><input id="tempDisable" type="checkbox"> Temp disable (this tab)</label>
-      </div>
-
-      <div class="row" style="justify-content:space-between; align-items:center;">
-        <label class="label"><input id="siteDisable" type="checkbox"> Disable on this site</label>
-      </div>
-
-      <div class="muted small" id="statusText" style="margin-top:6px;"></div>
-    </section>
-
-    <!-- BACKUP -->
-    <section class="card">
-      <h2 style="margin:0 0 8px 0;">Backup</h2>
-      <div class="muted small">Export your settings to JSON, or import them later.</div>
-
-      <div class="row" style="margin-top:10px; gap:10px;">
+      <div class="row">
         <button class="btn" id="exportBtn" type="button">Export JSON</button>
+
         <button class="btn" id="importBtn" type="button">Import JSON</button>
         <input id="importFile" type="file" accept="application/json,.json" style="display:none;">
       </div>
-    </section>
 
-    <!-- ENABLE (full options toggle) -->
-    <section class="card">
-      <label class="label"><input id="enabled" type="checkbox"> Enable gestures (global)</label>
-      <div class="muted small">This is the master on/off switch.</div>
-    </section>
-
-    <!-- SITE MODE -->
-    <section class="card">
-      <h2 style="margin:0 0 8px 0;">Site mode</h2>
-
-      <div class="row" style="gap:16px; flex-wrap:wrap;">
-        <label class="label"><input id="modeBlacklist" type="radio" name="mode"> Blacklist</label>
-        <label class="label"><input id="modeWhitelist" type="radio" name="mode"> Whitelist</label>
-      </div>
-
-      <div class="muted small" style="margin-top:6px;">One domain per line.</div>
-      <textarea id="blacklist" class="textarea" rows="6" placeholder="example.com"></textarea>
-
-      <div class="row" style="margin-top:10px;">
-        <button class="btn" id="saveBlacklist" type="button">Save list</button>
+      <div class="muted small">
+        Import overwrites: enabled, mode, site list, trail tuning, gesture map, and smart exceptions.
       </div>
     </section>
 
-    <!-- TRAIL TUNING -->
+    <!-- Enable -->
     <section class="card">
-      <h2 style="margin:0 0 8px 0;">Trail tuning</h2>
+      <label class="checkline">
+        <input id="enabled" type="checkbox">
+        <span>Enable gestures</span>
+      </label>
+      <div class="muted small">
+        Gestures are right-drag only. Some sites may require holding Alt if you enable Smart exceptions.
+      </div>
+    </section>
+
+    <!-- Site mode -->
+    <section class="card">
+      <h2>Site mode</h2>
+      <div class="muted small">Blacklist = gestures run everywhere except listed sites. Whitelist = gestures run only on listed sites.</div>
+
+      <div class="row">
+        <label class="radio">
+          <input id="modeBlacklist" type="radio" name="mode" value="blacklist">
+          <span>Blacklist</span>
+        </label>
+
+        <label class="radio">
+          <input id="modeWhitelist" type="radio" name="mode" value="whitelist">
+          <span>Whitelist</span>
+        </label>
+      </div>
 
       <div class="grid2">
-        <label class="label">Min segment
-          <input id="minSegmentPx" type="range" min="6" max="60" step="1">
-        </label>
+        <textarea id="blacklist" spellcheck="false" placeholder="example.com&#10;github.com&#10;docs.google.com"></textarea>
 
-        <label class="label">Jitter
-          <input id="jitterPx" type="range" min="0" max="20" step="1">
-        </label>
-
-        <label class="label">Line width
-          <input id="lineWidth" type="range" min="1" max="12" step="1">
-        </label>
-
-        <label class="label">Trail color
-          <input id="trailColor" type="color">
-        </label>
-
-        <label class="label">Trail alpha
-          <input id="trailAlpha" type="range" min="0.05" max="1" step="0.01">
-        </label>
-      </div>
-
-      <div class="row" style="margin-top:10px; gap:10px;">
-        <button class="btn" id="savePrefs" type="button">Save tuning</button>
-        <button class="btn ghost" id="resetPrefs" type="button">Reset</button>
+        <div>
+          <button class="btn" id="saveBlacklist" type="button">Save list</button>
+          <div class="muted small">
+            One domain per line. Subdomains match automatically (rule <code>github.com</code> covers <code>gist.github.com</code>, etc.).
+          </div>
+        </div>
       </div>
     </section>
 
-    <!-- TRAINER -->
+    <!-- Trail tuning -->
     <section class="card">
-      <h2 style="margin:0 0 8px 0;">Trainer</h2>
-      <div class="muted small">Draw inside the box (left or right mouse). Detected pattern and action will show below.</div>
+      <h2>Trail tuning</h2>
 
-      <div class="trainer">
-        <canvas id="trainerCanvas"></canvas>
+      <div class="grid3">
+        <div>
+          <label class="label" for="minSegmentPx">Min segment</label>
+          <input id="minSegmentPx" type="range" min="6" max="60" step="1">
+        </div>
+
+        <div>
+          <label class="label" for="jitterPx">Jitter</label>
+          <input id="jitterPx" type="range" min="0" max="20" step="1">
+        </div>
+
+        <div>
+          <label class="label" for="lineWidth">Line width</label>
+          <input id="lineWidth" type="range" min="1" max="12" step="1">
+        </div>
+
+        <div>
+          <label class="label" for="trailColor">Trail color</label>
+          <input id="trailColor" type="color">
+        </div>
+
+        <div>
+          <label class="label" for="trailAlpha">Trail alpha</label>
+          <input id="trailAlpha" type="range" min="0.05" max="1" step="0.01">
+        </div>
+
+        <div class="row end">
+          <button class="btn" id="savePrefs" type="button">Save tuning</button>
+          <button class="btn ghost" id="resetPrefs" type="button">Reset</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- Smart exceptions -->
+    <section class="card">
+      <h2>Smart exceptions</h2>
+      <div class="muted small">
+        Some web apps hijack right-click (GitHub, Docs, Figma, etc.). Use this to make gestures behave nicely.
+        <br><strong>Require Alt</strong> means: hold <kbd>Alt</kbd> + right-drag to gesture on that site.
       </div>
 
-      <div class="row" style="margin-top:10px; justify-content:space-between; align-items:center;">
+      <div class="exceptions">
+        <div class="ex-row ex-head">
+          <div>Site</div>
+          <div>Behavior</div>
+        </div>
+
+        <div class="ex-row">
+          <div class="mono">github.com</div>
+          <select class="policySelect" data-host="github.com">
+            <option value="normal">Normal</option>
+            <option value="require_alt">Require Alt</option>
+            <option value="disabled">Disabled</option>
+          </select>
+        </div>
+
+        <div class="ex-row">
+          <div class="mono">docs.google.com</div>
+          <select class="policySelect" data-host="docs.google.com">
+            <option value="normal">Normal</option>
+            <option value="require_alt">Require Alt</option>
+            <option value="disabled">Disabled</option>
+          </select>
+        </div>
+
+        <div class="ex-row">
+          <div class="mono">figma.com</div>
+          <select class="policySelect" data-host="figma.com">
+            <option value="normal">Normal</option>
+            <option value="require_alt">Require Alt</option>
+            <option value="disabled">Disabled</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="row">
+        <button class="btn" id="savePolicies" type="button">Save smart exceptions</button>
+        <button class="btn ghost" id="resetPolicies" type="button">Reset to recommended</button>
+      </div>
+    </section>
+
+    <!-- Trainer -->
+    <section class="card">
+      <h2>Trainer</h2>
+      <div class="muted small">Draw inside the box (right mouse; some sites may require Alt). Detected pattern shows below.</div>
+
+      <div class="trainer">
+        <canvas id="trainerCanvas" width="860" height="220"></canvas>
+      </div>
+
+      <div class="row trainer-info">
         <button class="btn ghost" id="trainerClear" type="button">Clear</button>
 
-        <div class="muted small" style="text-align:right;">
+        <div class="trainer-readout">
           <div><span class="muted">Detected:</span> <span id="trainerPattern">—</span></div>
           <div><span class="muted">Action:</span> <span id="trainerAction">—</span></div>
         </div>
       </div>
     </section>
 
-    <!-- GESTURE MAP -->
+    <!-- Gesture map -->
     <section class="card">
-      <h2 style="margin:0 0 8px 0;">Gesture map</h2>
-      <div class="muted small">Map patterns to actions. “(disabled)” means do nothing.</div>
+      <h2>Gesture map</h2>
+      <div class="muted small">Map detected patterns to actions. “(disabled)” means do nothing.</div>
 
       <div id="mapGrid" class="mapGrid"></div>
 
-      <div class="row" style="margin-top:10px;">
+      <div class="row">
         <button class="btn" id="saveMap" type="button">Save mappings</button>
       </div>
     </section>

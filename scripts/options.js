@@ -1,8 +1,10 @@
 // scripts/options.js
+// Full Options controller for Mouse Gestures (MV3)
 
 const KEYS = {
   cfg: "mg_config_v1",
-  list: "mg_blacklist_v1"
+  list: "mg_blacklist_v1",
+  policies: "mg_site_policies_v1"
 };
 
 const DEFAULTS = {
@@ -27,26 +29,92 @@ const DEFAULTS = {
   }
 };
 
-const ACTIONS = ["", "back", "forward", "reload", "top", "bottom", "close_tab", "new_tab"];
-const COMMON_PATTERNS = ["L","R","U","D","UL","UR","DL","DR","LU","LD","RU","RD","LR","RL","UD","DU","URD","ULD","DRU","DLU"];
+// Recommended "feels pro" defaults
+const DEFAULT_POLICIES = {
+  "github.com": { behavior: "require_alt" },
+  "gist.github.com": { behavior: "require_alt" },
+  "docs.google.com": { behavior: "require_alt" },
+  "drive.google.com": { behavior: "require_alt" },
+  "figma.com": { behavior: "require_alt" }
+};
 
-function uniq(arr){ return Array.from(new Set(arr.filter(Boolean))); }
-function clamp(n,a,b){ n=Number(n); if(!Number.isFinite(n)) return a; return Math.min(b, Math.max(a,n)); }
-function normalizeHost(host){ return String(host||"").trim().toLowerCase(); }
-function isValidHost(s){
+const ACTIONS = [
+  "", // disabled
+  "back",
+  "forward",
+  "reload",
+  "top",
+  "bottom",
+  "close_tab",
+  "new_tab"
+];
+
+const COMMON_PATTERNS = [
+  "L","R","U","D",
+  "UL","UR","DL","DR",
+  "LU","LD","RU","RD",
+  "LR","RL","UD","DU",
+  "URD","ULD","DRU","DLU"
+];
+
+function uniq(arr) {
+  return Array.from(new Set(arr.filter(Boolean)));
+}
+
+function clamp(n, a, b) {
+  n = Number(n);
+  if (!Number.isFinite(n)) return a;
+  return Math.min(b, Math.max(a, n));
+}
+
+function normalizeHost(host) {
+  return String(host || "").trim().toLowerCase();
+}
+
+function isValidHost(s) {
   s = normalizeHost(s);
-  if(!s) return false;
-  if(s.includes("://")) return false;
-  if(s.includes("/")) return false;
+  if (!s) return false;
+  if (s.includes("://")) return false;
+  if (s.includes("/")) return false;
   return true;
 }
 
-async function send(type, payload = {}) {
-  try {
-    return await chrome.runtime.sendMessage({ type, ...payload });
-  } catch (e) {
-    return { ok: false, error: String(e?.message || e) };
-  }
+async function readAll() {
+  const res = await chrome.storage.local.get([KEYS.cfg, KEYS.list, KEYS.policies]);
+
+  const cfgRaw = res[KEYS.cfg] && typeof res[KEYS.cfg] === "object" ? res[KEYS.cfg] : {};
+  const listRaw = Array.isArray(res[KEYS.list]) ? res[KEYS.list] : [];
+  const policiesRaw = res[KEYS.policies] && typeof res[KEYS.policies] === "object" ? res[KEYS.policies] : {};
+
+  const cfg = {
+    enabled: typeof cfgRaw.enabled === "boolean" ? cfgRaw.enabled : DEFAULTS.enabled,
+    mode: (cfgRaw.mode === "whitelist" || cfgRaw.mode === "blacklist") ? cfgRaw.mode : DEFAULTS.mode,
+    theme: (cfgRaw.theme === "light" || cfgRaw.theme === "dim" || cfgRaw.theme === "dark") ? cfgRaw.theme : DEFAULTS.theme,
+    prefs: {
+      ...DEFAULTS.prefs,
+      ...(cfgRaw.prefs && typeof cfgRaw.prefs === "object" ? cfgRaw.prefs : {})
+    },
+    gestureMap: {
+      ...DEFAULTS.gestureMap,
+      ...(cfgRaw.gestureMap && typeof cfgRaw.gestureMap === "object" ? cfgRaw.gestureMap : {})
+    }
+  };
+
+  const policies = { ...DEFAULT_POLICIES, ...(policiesRaw || {}) };
+
+  return { cfg, list: listRaw, policies };
+}
+
+async function writeCfg(cfg) {
+  await chrome.storage.local.set({ [KEYS.cfg]: cfg });
+}
+
+async function writeList(list) {
+  await chrome.storage.local.set({ [KEYS.list]: list });
+}
+
+async function writePolicies(policies) {
+  await chrome.storage.local.set({ [KEYS.policies]: policies });
 }
 
 function showSaved(msg = "Saved") {
@@ -54,13 +122,6 @@ function showSaved(msg = "Saved") {
   if (!el) return;
   el.textContent = msg;
   if (msg) setTimeout(() => (el.textContent = ""), 900);
-}
-
-function setStatus(text) {
-  const el = document.getElementById("statusText");
-  if (!el) return;
-  el.textContent = text || "";
-  if (text) setTimeout(() => (el.textContent = ""), 1400);
 }
 
 function applyTheme(theme) {
@@ -72,108 +133,17 @@ function setRangeValue(range, value) {
   range.value = String(value);
 }
 
-async function readAll() {
-  const res = await chrome.storage.local.get([KEYS.cfg, KEYS.list]);
-  const cfg = res[KEYS.cfg] && typeof res[KEYS.cfg] === "object" ? res[KEYS.cfg] : {};
-  const list = Array.isArray(res[KEYS.list]) ? res[KEYS.list] : [];
+async function downloadJson(filename, obj) {
+  const blob = new Blob([JSON.stringify(obj, null, 2)], { type: "application/json" });
+  const url = URL.createObjectURL(blob);
 
-  const merged = {
-    enabled: typeof cfg.enabled === "boolean" ? cfg.enabled : DEFAULTS.enabled,
-    mode: (cfg.mode === "whitelist" || cfg.mode === "blacklist") ? cfg.mode : DEFAULTS.mode,
-    theme: (cfg.theme === "light" || cfg.theme === "dim" || cfg.theme === "dark") ? cfg.theme : DEFAULTS.theme,
-    prefs: { ...DEFAULTS.prefs, ...(cfg.prefs && typeof cfg.prefs === "object" ? cfg.prefs : {}) },
-    gestureMap: { ...DEFAULTS.gestureMap, ...(cfg.gestureMap && typeof cfg.gestureMap === "object" ? cfg.gestureMap : {}) }
-  };
-
-  return { cfg: merged, list };
-}
-
-async function writeCfg(cfg) {
-  await chrome.storage.local.set({ [KEYS.cfg]: cfg });
-}
-
-async function writeList(list) {
-  await chrome.storage.local.set({ [KEYS.list]: list });
-}
-
-// ===== Quick Controls =====
-async function getActiveTab() {
-  const tabs = await chrome.tabs.query({ active: true, currentWindow: true });
-  return (tabs && tabs[0]) ? tabs[0] : null;
-}
-
-function domainFromUrl(url) {
-  try { return new URL(url).hostname.toLowerCase(); } catch { return ""; }
-}
-
-function isBlockedUrl(url) {
-  if (!url) return true;
-  return (
-    url.startsWith("chrome://") ||
-    url.startsWith("edge://") ||
-    url.startsWith("about:") ||
-    url.startsWith("chrome-extension://") ||
-    url.startsWith("https://chrome.google.com/webstore") ||
-    url.startsWith("https://chromewebstore.google.com")
-  );
-}
-
-async function initQuickControls(cfg) {
-  const domainLabel = document.getElementById("domainLabel");
-  const globalEnabled = document.getElementById("globalEnabled");
-  const tempDisable = document.getElementById("tempDisable");
-  const siteDisable = document.getElementById("siteDisable");
-  const qcHint = document.getElementById("qcHint");
-
-  const tab = await getActiveTab();
-  const tabId = tab?.id;
-  const url = tab?.url || "";
-  const domain = domainFromUrl(url);
-
-  if (domainLabel) domainLabel.textContent = domain || "(no domain)";
-
-  // Set global checkbox based on cfg
-  if (globalEnabled) globalEnabled.checked = !!cfg.enabled;
-
-  const blocked = !tabId || isBlockedUrl(url);
-
-  if (blocked) {
-    if (qcHint) qcHint.textContent = "This page blocks extensions or has no URL. Per-tab/per-site controls disabled.";
-    if (tempDisable) { tempDisable.checked = false; tempDisable.disabled = true; }
-    if (siteDisable) { siteDisable.checked = false; siteDisable.disabled = true; }
-  } else {
-    if (qcHint) qcHint.textContent = "Applies to your current active tab.";
-    if (tempDisable) tempDisable.disabled = false;
-    if (siteDisable) siteDisable.disabled = false;
-
-    const status = await send("MG_GET_TAB_STATUS", { tabId, tabUrl: url });
-    if (!status?.ok) setStatus(status?.error || "Status error");
-    else {
-      if (globalEnabled) globalEnabled.checked = !!status.globalEnabled;
-      if (tempDisable) tempDisable.checked = !!status.tempDisabled;
-      if (siteDisable) siteDisable.checked = !!status.blacklisted;
-    }
-  }
-
-  globalEnabled?.addEventListener("change", async () => {
-    const res = await send("MG_SET_GLOBAL_ENABLED", { enabled: !!globalEnabled.checked });
-    if (!res?.ok) setStatus(res?.error || "Error saving");
-    else setStatus("Saved");
+  await chrome.downloads.download({
+    url,
+    filename,
+    saveAs: true
   });
 
-  tempDisable?.addEventListener("change", async () => {
-    if (!tabId) return;
-    const res = await send("MG_SET_TEMP_DISABLED", { tabId, tempDisabled: !!tempDisable.checked });
-    if (!res?.ok) setStatus(res?.error || "Error saving");
-    else setStatus("Saved");
-  });
-
-  siteDisable?.addEventListener("change", async () => {
-    if (!domain) return;
-    const res = await send("MG_SET_DOMAIN_BLACKLISTED", { domain, blacklisted: !!siteDisable.checked });
-    if (!res?.ok) setStatus(res?.error || "Error saving");
-    else setStatus("Saved");
-  });
+  setTimeout(() => URL.revokeObjectURL(url), 1200);
 }
 
 /* =========================
@@ -185,17 +155,6 @@ function initTrainer() {
   const patEl = document.getElementById("trainerPattern");
   const actEl = document.getElementById("trainerAction");
   if (!canvas || !patEl || !actEl) return;
-
-  // size canvas to its CSS box
-  function resizeCanvas() {
-    const r = canvas.getBoundingClientRect();
-    const dpr = Math.max(1, window.devicePixelRatio || 1);
-    canvas.width = Math.floor(r.width * dpr);
-    canvas.height = Math.floor(r.height * dpr);
-    const ctx = canvas.getContext("2d");
-    if (ctx) ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-    clearCanvas();
-  }
 
   const ctx = canvas.getContext("2d");
   if (!ctx) return;
@@ -210,8 +169,7 @@ function initTrainer() {
     getComputedStyle(document.documentElement).getPropertyValue(name).trim() || fb;
 
   function clearCanvas() {
-    const r = canvas.getBoundingClientRect();
-    const w = r.width, h = r.height;
+    const w = canvas.width, h = canvas.height;
     ctx.clearRect(0, 0, w, h);
 
     const border = cssVar("--border", "rgba(255,255,255,.12)");
@@ -246,10 +204,13 @@ function initTrainer() {
 
   function pos(e) {
     const r = canvas.getBoundingClientRect();
-    return { x: e.clientX - r.left, y: e.clientY - r.top };
+    return {
+      x: (e.clientX - r.left) * (canvas.width / r.width),
+      y: (e.clientY - r.top) * (canvas.height / r.height)
+    };
   }
 
-  const dist = (a,b) => Math.hypot(a.x-b.x, a.y-b.y);
+  const dist = (a, b) => Math.hypot(a.x - b.x, a.y - b.y);
 
   function detectPattern(pts, minSeg, jitter) {
     if (!pts || pts.length < 2) return "";
@@ -282,17 +243,23 @@ function initTrainer() {
     const accent = cssVar("--accent", "#00e5ff");
     const lw = Math.max(2, Number(window.prefs?.lineWidth ?? 2));
 
+    // comet-ish fade along path
     ctx.save();
     ctx.strokeStyle = accent;
-    ctx.lineWidth = lw;
     ctx.lineJoin = "round";
     ctx.lineCap = "round";
-    ctx.globalAlpha = 0.95;
 
-    ctx.beginPath();
-    ctx.moveTo(pts[0].x, pts[0].y);
-    for (let i = 1; i < pts.length; i++) ctx.lineTo(pts[i].x, pts[i].y);
-    ctx.stroke();
+    const n = pts.length;
+    for (let i = 1; i < n; i++) {
+      const t = i / (n - 1);
+      ctx.globalAlpha = 0.15 + 0.85 * t;
+      ctx.lineWidth = Math.max(1, lw * t);
+
+      ctx.beginPath();
+      ctx.moveTo(pts[i - 1].x, pts[i - 1].y);
+      ctx.lineTo(pts[i].x, pts[i].y);
+      ctx.stroke();
+    }
     ctx.restore();
   }
 
@@ -307,8 +274,8 @@ function initTrainer() {
     actEl.textContent = action || "—";
   }
 
-  function start(e) {
-    // allow left (0) OR right (2)
+  canvas.addEventListener("pointerdown", (e) => {
+    // allow left or right button in trainer
     if (e.button !== 0 && e.button !== 2) return;
     drawing = true;
     points = [pos(e)];
@@ -316,23 +283,17 @@ function initTrainer() {
     drawPath(points);
     update();
     e.preventDefault();
-  }
+  });
 
-  function move(e) {
+  canvas.addEventListener("pointermove", (e) => {
     if (!drawing) return;
     points.push(pos(e));
     drawPath(points);
     update();
     e.preventDefault();
-  }
+  });
 
-  function end() {
-    drawing = false;
-    update();
-  }
-
-  canvas.addEventListener("pointerdown", start);
-  canvas.addEventListener("pointermove", move);
+  const end = () => { drawing = false; update(); };
   canvas.addEventListener("pointerup", end);
   canvas.addEventListener("pointercancel", end);
 
@@ -348,8 +309,7 @@ function initTrainer() {
     attributeFilter: ["data-theme"]
   });
 
-  window.addEventListener("resize", resizeCanvas);
-  setTimeout(resizeCanvas, 0);
+  clearCanvas();
 }
 
 /* =========================
@@ -359,7 +319,10 @@ function renderMapGrid(mapGrid, gestureMap) {
   if (!mapGrid) return;
   mapGrid.innerHTML = "";
 
-  const patterns = uniq([...Object.keys(gestureMap || {}), ...COMMON_PATTERNS]);
+  const patterns = uniq([
+    ...Object.keys(gestureMap || {}),
+    ...COMMON_PATTERNS
+  ]);
 
   patterns.forEach((p) => {
     const row = document.createElement("div");
@@ -392,18 +355,6 @@ function renderMapGrid(mapGrid, gestureMap) {
 }
 
 /* =========================
-   Export helper
-   ========================= */
-async function downloadJson(filename, obj) {
-  const blob = new Blob([JSON.stringify(obj, null, 2)], { type: "application/json" });
-  const url = URL.createObjectURL(blob);
-
-  await chrome.downloads.download({ url, filename, saveAs: true });
-
-  setTimeout(() => URL.revokeObjectURL(url), 1200);
-}
-
-/* =========================
    Main
    ========================= */
 (async () => {
@@ -430,19 +381,20 @@ async function downloadJson(filename, obj) {
   const mapGrid = document.getElementById("mapGrid");
   const saveMap = document.getElementById("saveMap");
 
-  // Load
-  const { cfg, list } = await readAll();
+  const savePoliciesBtn = document.getElementById("savePolicies");
+  const resetPoliciesBtn = document.getElementById("resetPolicies");
+  const policySelects = document.querySelectorAll("select.policySelect");
 
-  // expose for trainer
+  // Load current settings
+  const { cfg, list, policies } = await readAll();
+
+  // Expose for Trainer
   window.prefs = cfg.prefs;
   window.gestureMap = cfg.gestureMap;
 
-  // Apply theme
+  // Theme
   applyTheme(cfg.theme);
   if (themeSelect) themeSelect.value = cfg.theme;
-
-  // Quick controls (popup replacement)
-  await initQuickControls(cfg);
 
   // Enabled
   if (enabledEl) enabledEl.checked = !!cfg.enabled;
@@ -464,10 +416,18 @@ async function downloadJson(filename, obj) {
   // Gesture map UI
   renderMapGrid(mapGrid, cfg.gestureMap);
 
-  // Trainer
+  // Policies UI
+  policySelects.forEach((sel) => {
+    const host = sel.dataset.host;
+    const beh = policies?.[host]?.behavior || DEFAULT_POLICIES?.[host]?.behavior || "normal";
+    sel.value = beh;
+  });
+
+  // Start trainer
   initTrainer();
 
-  // Theme
+  /* ========= handlers ========= */
+
   themeSelect?.addEventListener("change", async () => {
     cfg.theme = themeSelect.value;
     applyTheme(cfg.theme);
@@ -475,14 +435,12 @@ async function downloadJson(filename, obj) {
     showSaved("Theme saved");
   });
 
-  // Global enable
   enabledEl?.addEventListener("change", async () => {
     cfg.enabled = !!enabledEl.checked;
     await writeCfg(cfg);
     showSaved();
   });
 
-  // Mode toggles
   modeBlacklist?.addEventListener("change", async () => {
     if (!modeBlacklist.checked) return;
     cfg.mode = "blacklist";
@@ -497,7 +455,6 @@ async function downloadJson(filename, obj) {
     showSaved();
   });
 
-  // Save list
   saveBlacklistBtn?.addEventListener("click", async () => {
     const raw = String(blacklistBox?.value || "");
     const next = uniq(
@@ -505,11 +462,11 @@ async function downloadJson(filename, obj) {
         .map((s) => normalizeHost(s))
         .filter((s) => isValidHost(s))
     );
+
     await writeList(next);
     showSaved("List saved");
   });
 
-  // Save tuning
   savePrefs?.addEventListener("click", async () => {
     cfg.prefs = {
       minSegmentPx: clamp(minSegmentPx?.value ?? cfg.prefs.minSegmentPx, 6, 60),
@@ -518,6 +475,7 @@ async function downloadJson(filename, obj) {
       trailColor: String(trailColor?.value || cfg.prefs.trailColor || DEFAULTS.prefs.trailColor),
       trailAlpha: clamp(trailAlpha?.value ?? cfg.prefs.trailAlpha, 0.05, 1)
     };
+
     await writeCfg(cfg);
     window.prefs = cfg.prefs;
     showSaved("Tuning saved");
@@ -538,10 +496,10 @@ async function downloadJson(filename, obj) {
     showSaved("Reset");
   });
 
-  // Save mappings
   saveMap?.addEventListener("click", async () => {
     const selects = mapGrid?.querySelectorAll("select[data-pattern]") || [];
     const next = {};
+
     selects.forEach((sel) => {
       const p = sel.dataset.pattern;
       const v = String(sel.value || "");
@@ -555,31 +513,70 @@ async function downloadJson(filename, obj) {
     showSaved("Mappings saved");
   });
 
-  // Export / Import
+  // Policies save/reset
+  savePoliciesBtn?.addEventListener("click", async () => {
+    const next = {};
+    policySelects.forEach((sel) => {
+      const host = sel.dataset.host;
+      const v = String(sel.value || "normal");
+      if (host) next[host] = { behavior: v };
+    });
+
+    await writePolicies(next);
+    showSaved("Smart exceptions saved");
+  });
+
+  resetPoliciesBtn?.addEventListener("click", async () => {
+    await writePolicies(DEFAULT_POLICIES);
+    policySelects.forEach((sel) => {
+      const host = sel.dataset.host;
+      const beh = DEFAULT_POLICIES?.[host]?.behavior || "normal";
+      sel.value = beh;
+    });
+    showSaved("Reset to recommended");
+  });
+
+  // Backup export/import
   exportBtn?.addEventListener("click", async () => {
-    const { cfg: liveCfg, list: liveList } = await readAll();
+    const { cfg: liveCfg, list: liveList, policies: livePolicies } = await readAll();
+
     const payload = {
-      meta: { app: "Mouse Gestures", schema: 1, exportedAt: new Date().toISOString() },
+      meta: {
+        app: "Mouse Gestures",
+        schema: 2,
+        exportedAt: new Date().toISOString()
+      },
       cfg: liveCfg,
-      list: liveList
+      list: liveList,
+      policies: livePolicies
     };
+
     const filename = `mouse-gestures-settings-${new Date().toISOString().slice(0, 10)}.json`;
     await downloadJson(filename, payload);
     showSaved("Exported");
   });
 
-  importBtn?.addEventListener("click", () => importFile?.click());
+  importBtn?.addEventListener("click", () => {
+    importFile?.click();
+  });
 
   importFile?.addEventListener("change", async () => {
     const file = importFile.files && importFile.files[0];
     if (!file) return;
 
+    const text = await file.text();
     let data;
-    try { data = JSON.parse(await file.text()); }
-    catch { showSaved("Bad JSON"); importFile.value = ""; return; }
+    try {
+      data = JSON.parse(text);
+    } catch {
+      showSaved("Bad JSON");
+      importFile.value = "";
+      return;
+    }
 
     const incomingCfg = data?.cfg;
     const incomingList = data?.list;
+    const incomingPolicies = data?.policies;
 
     if (!incomingCfg || typeof incomingCfg !== "object") {
       showSaved("Missing cfg");
@@ -591,7 +588,10 @@ async function downloadJson(filename, obj) {
       enabled: typeof incomingCfg.enabled === "boolean" ? incomingCfg.enabled : DEFAULTS.enabled,
       mode: (incomingCfg.mode === "whitelist" || incomingCfg.mode === "blacklist") ? incomingCfg.mode : DEFAULTS.mode,
       theme: (incomingCfg.theme === "light" || incomingCfg.theme === "dim" || incomingCfg.theme === "dark") ? incomingCfg.theme : DEFAULTS.theme,
-      prefs: { ...DEFAULTS.prefs, ...(incomingCfg.prefs && typeof incomingCfg.prefs === "object" ? incomingCfg.prefs : {}) },
+      prefs: {
+        ...DEFAULTS.prefs,
+        ...(incomingCfg.prefs && typeof incomingCfg.prefs === "object" ? incomingCfg.prefs : {})
+      },
       gestureMap: (incomingCfg.gestureMap && typeof incomingCfg.gestureMap === "object") ? incomingCfg.gestureMap : {}
     };
 
@@ -599,9 +599,17 @@ async function downloadJson(filename, obj) {
       ? uniq(incomingList.map(normalizeHost).filter(isValidHost))
       : [];
 
-    await chrome.storage.local.set({ [KEYS.cfg]: nextCfg, [KEYS.list]: nextList });
+    const nextPolicies = (incomingPolicies && typeof incomingPolicies === "object")
+      ? incomingPolicies
+      : DEFAULT_POLICIES;
+
+    await chrome.storage.local.set({
+      [KEYS.cfg]: nextCfg,
+      [KEYS.list]: nextList,
+      [KEYS.policies]: nextPolicies
+    });
 
     showSaved("Imported");
-    setTimeout(() => location.reload(), 250);
+    setTimeout(() => location.reload(), 300);
   });
 })();
