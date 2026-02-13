@@ -1,7 +1,6 @@
 // scripts/content.js
 // Mouse Gestures - content script (MV3)
-// Right-drag gestures with comet trail + smart exclusions
-// Fixed: robust 8-direction token detection (UR/DR/DL/UL) using token array.
+// With Option 2: right-drag on a link opens it in new tab, otherwise forward
 
 (() => {
   "use strict";
@@ -16,12 +15,10 @@
     enabled: true,
     mode: "blacklist",
     prefs: {
-      // Less finicky defaults:
-      minSegmentPx: 6,   // smaller = easier
-      jitterPx: 9,        // higher = ignores tiny wobble
-      sampleMinPx: 6,     // throttle points a bit (reduces noise)
-      movedPx: 4,         // smaller = easier to count as a gesture
-
+      minSegmentPx: 8,
+      jitterPx: 4,
+      sampleMinPx: 3,
+      movedPx: 3,
       lineWidth: 3,
       trailColor: "#00e5ff",
       trailAlpha: 0.85
@@ -30,11 +27,8 @@
       L: "back",
       R: "forward",
       U: "top",
-      D: "bottom",
-      UR: "new_tab",
-      DR: "close_tab",
-      DL: "reload"
-      // UL: (unused by default)
+      D: "bottom"
+      // Diagonals disabled by default to avoid misfires
     }
   };
 
@@ -87,7 +81,6 @@
         }
       };
 
-      // clamp for safety
       cfg.prefs.minSegmentPx = clamp(cfg.prefs.minSegmentPx, 6, 60);
       cfg.prefs.jitterPx = clamp(cfg.prefs.jitterPx, 0, 20);
       cfg.prefs.sampleMinPx = clamp(cfg.prefs.sampleMinPx, 0, 10);
@@ -116,7 +109,6 @@
     );
   }
 
-  // Exclude editors/inputs/etc
   const EXCLUDE_SELECTORS = [
     "input",
     "textarea",
@@ -155,7 +147,7 @@
     tracking: false,
     moved: false,
     points: [],
-    tokens: [],         // <-- FIX: store direction tokens here
+    tokens: [],
     startTarget: null,
 
     suppressContextOnce: false,
@@ -195,7 +187,6 @@
     return getSitePolicy(host).behavior === "require_alt";
   }
 
-  // Trail canvas
   function ensureCanvas() {
     if (state.canvas && document.documentElement.contains(state.canvas)) return;
 
@@ -256,7 +247,6 @@
       ctx.stroke();
     }
 
-    // tip triangle
     const a = points[n - 2];
     const b = points[n - 1];
     const dx = b.x - a.x;
@@ -296,33 +286,27 @@
   }
 
   function dir8(dx, dy, jitter) {
-    const adx = Math.abs(dx), ady = Math.abs(dy);
+    const adx = Math.abs(dx);
+    const ady = Math.abs(dy);
     if (adx < jitter && ady < jitter) return "";
 
     const ang = Math.atan2(dy, dx) * 180 / Math.PI;
 
-    const sectors = [
-      { c:   0, d: "R"  },
-      { c:  45, d: "DR" },
-      { c:  90, d: "D"  },
-      { c: 135, d: "DL" },
-      { c: 180, d: "L"  },
-      { c:-135, d: "UL" },
-      { c: -90, d: "U"  },
-      { c: -45, d: "UR" }
-    ];
-
-    let best = sectors[0].d;
-    let bestDiff = Infinity;
-    for (const s of sectors) {
-      let diff = Math.abs(ang - s.c);
-      diff = Math.min(diff, 360 - diff);
-      if (diff < bestDiff) {
-        bestDiff = diff;
-        best = s.d;
-      }
+    // ±85° tolerance for horizontal to forgive wobble
+    if (Math.abs(ang) <= 85 || Math.abs(ang - 180) <= 85 || Math.abs(ang + 180) <= 85) {
+      return dx >= 0 ? "R" : "L";
     }
-    return best;
+
+    if (Math.abs(ang - 90) <= 40 || Math.abs(ang + 90) <= 40) {
+      return dy >= 0 ? "D" : "U";
+    }
+
+    if (Math.abs(ang - 45) <= 30)  return "DR";
+    if (Math.abs(ang + 45) <= 30)  return "UR";
+    if (Math.abs(ang - 135) <= 30) return "DL";
+    if (Math.abs(ang + 135) <= 30) return "UL";
+
+    return "";
   }
 
   function getLinkHref(target) {
@@ -415,36 +399,29 @@
 
     const p = pagePointFromMouse(e);
 
-    // point throttling
     const last = state.points[state.points.length - 1];
     const minPt = Number(state.prefs.sampleMinPx ?? DEFAULTS.prefs.sampleMinPx);
     if (!last || dist(last, p) >= minPt) state.points.push(p);
 
-    // moved?
     if (!state.moved) {
       const first = state.points[0];
       const movedPx = Number(state.prefs.movedPx ?? DEFAULTS.prefs.movedPx);
       if (dist(first, p) >= movedPx) state.moved = true;
     }
 
-    // token detection
     const minSeg = Number(state.prefs.minSegmentPx ?? DEFAULTS.prefs.minSegmentPx);
     const jitter = Number(state.prefs.jitterPx ?? DEFAULTS.prefs.jitterPx);
 
-    // accumulate distance since last token anchor
-    // we use the last token point as anchor (or the first point if no token yet)
     const anchorIndex = state.tokens.length === 0 ? 0 : state._lastTokenIndex;
     const anchor = state.points[anchorIndex] || state.points[0];
 
-    // Only attempt a new token when we've moved enough from the anchor
     if (dist(anchor, p) >= minSeg) {
       const d = dir8(p.x - anchor.x, p.y - anchor.y, jitter);
-      const lastToken = state.tokens[state.tokens.length - 1] || "";
-      if (d && d !== lastToken) {
-        state.tokens.push(d);
-        state._lastTokenIndex = state.points.length - 1;
-      } else {
-        // even if same token, update anchor index so it doesn’t spam
+      if (d) {
+        const lastToken = state.tokens[state.tokens.length - 1] || "";
+        if (d !== lastToken) {
+          state.tokens.push(d);
+        }
         state._lastTokenIndex = state.points.length - 1;
       }
     }
@@ -468,11 +445,27 @@
       return;
     }
 
-    const pattern = (state.tokens || []).join(""); // e.g. "DR" or "RDL"
-    const action = pattern ? (state.gestureMap?.[pattern] || "") : "";
+    const pattern = (state.tokens || []).join("");
+    let action = state.gestureMap[pattern] || "";
+
+    // Option 2: if pattern is "R" and started on a link → open link in new tab instead of forward
+    if (pattern === "R" && state.startTarget) {
+      const linkHref = getLinkHref(state.startTarget);
+      if (linkHref) {
+        action = "new_tab";
+        console.log(`[MG] Link detected on "R" gesture → overriding to new_tab: ${linkHref}`);
+      }
+    }
+
+    console.log(`[MG] Final pattern: "${pattern}" | Action: "${action || '(none)'}"`);
 
     if (action) {
-      try { await execAction(action, state.startTarget); } catch {}
+      try {
+        await execAction(action, state.startTarget);
+        console.log(`[MG] Action "${action}" executed`);
+      } catch (err) {
+        console.error(`[MG] Action "${action}" failed:`, err);
+      }
     }
 
     state.tracking = false;
@@ -518,7 +511,6 @@
 
     window.addEventListener("resize", resizeCanvas, { passive: true });
 
-    // capture phase to beat page handlers
     window.addEventListener("mousedown", startGesture, true);
     window.addEventListener("mousemove", updateGesture, true);
     window.addEventListener("mouseup", endGesture, true);
